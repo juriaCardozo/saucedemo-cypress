@@ -108,34 +108,60 @@ describe('Cenário 3: Adição de Produtos ao Carrinho', () => {
   })
 
   it('Testar o limite máximo de produtos que podem ser adicionados ao carrinho e verificar se o sistema está tratando corretamente essa condição.', () => {
-    
+    cy.get('.inventory_item').then(($product) => {
+      for (let i=0; i<$product.length; i++) {
+        cy.get(`:nth-child(${i+1}) > .inventory_item_description button`).click()
+      }
+      cy.get('.shopping_cart_badge').invoke('text').should('eq', (6).toString())
+      cy.get('.shopping_cart_link').click()
+      
+      cy.get('.cart_item_label').then((itens) => {
+        cy.wrap(itens.length).should('eq', 6)
+      })
+    })
   })
 })
 
 describe('Cenário 4: Finalização da Compra', () => {
-  it('Verificar se o fluxo de finalização da compra está funcionando corretamente.', () => {
-    
-  })
-  
-  it('Testar diferentes métodos de pagamento (cartão de crédito, PayPal, etc.) e verificar se os dados são corretamente processados.', () => {
+  fazerLogin()
 
+  it('Verificar se o fluxo de finalização da compra está funcionando corretamente.', () => {
+    cy.get(':nth-child(1) > .inventory_item_description button').click()
+    cy.get('.shopping_cart_link').click()
+
+    cy.get('[data-test="checkout"]').click()
+
+    cy.get('[data-test="firstName"]').should('be.visible').type('First Name')
+    cy.get('[data-test="lastName"]').should('be.visible').type('Last Name')
+    cy.get('[data-test="postalCode"]').should('be.visible').type('Zip')
+    cy.get('[data-test="continue"]').click()
+    
+    cy.get('[data-test="finish"]').click()
+    cy.get('.title').invoke('text').should('eq', 'Checkout: Complete!')
   })
 
   it('Verificar se os produtos selecionados são exibidos corretamente no resumo da compra e no recibo final.', () => {
+    cy.get('.inventory_item').then(($product) => {
+      let nomes = []
+      for (let i=0; i<$product.length; i++) {
+        if((i+1)%2 == 0) {
+          cy.get(`:nth-child(${i+1}) > .inventory_item_description button`).click()
+          cy.get(`:nth-child(${i+1}) > .inventory_item_description .inventory_item_name`).invoke('text').then((text) => {
+            nomes.push(text)
+          })
+        }
+      }
 
-  })
-})
+      cy.get('.shopping_cart_link').click()
+      cy.get('[data-test="checkout"]').click()
+      cy.get('[data-test="firstName"]').should('be.visible').type('First Name')
+      cy.get('[data-test="lastName"]').should('be.visible').type('Last Name')
+      cy.get('[data-test="postalCode"]').should('be.visible').type('Zip')
+      cy.get('[data-test="continue"]').click()
 
-describe('Cenário 5: Conta de Usuário', () => {
-  it('Testar a funcionalidade de criação de uma nova conta de usuário.', () => {
-    
-  })
-  
-  it('Verificar se os dados fornecidos são corretamente armazenados no sistema.', () => {
-
-  })
-
-  it('Testar a funcionalidade de edição de informações da conta e verificar se as alterações são salvas corretamente.', () => {
-
+      cy.wrap(nomes).each((nome, index) => {
+        cy.get(`.cart_list > :nth-child(${index + 3})`).find(".inventory_item_name").invoke('text').should('eq', nome)
+      })
+    })
   })
 })
